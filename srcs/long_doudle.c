@@ -6,11 +6,12 @@
 /*   By: pstein <pstein@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2019/11/21 17:31:34 by gfreddie          #+#    #+#             */
-/*   Updated: 2019/12/02 21:45:19 by gfreddie         ###   ########.fr       */
+/*   Updated: 2019/12/03 13:09:58 by gfreddie         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "ft_printf.h"
+#include <stdio.h>
 
 char				*str_rewrite(char *str, int i)
 {
@@ -55,6 +56,7 @@ char				*str_revers(char *str)
 		j++;
 		i--;
 	}
+	free(str);
 	return (str_new);
 }
 
@@ -113,7 +115,7 @@ char				*normalizer(char *str, char *str1)
 		i++;
 		len--;
 	}
-	return (ft_strjoin(ft_strjoin(str_new, "."), str1_new));
+	return (ft_strplus(ft_strplus(str_new, ".", 1, 0), str1_new, 1, 1));
 }
 
 char				*zero_str(int	i)
@@ -131,8 +133,8 @@ char				*zero_str(int	i)
 	}
 	return (str);
 }
-/*
-char				*ft_itoa_base(unsigned long long nb)
+
+char				*ft_itoa_base1(unsigned long long nb)
 {
 	char				*str;
 	int					i;
@@ -150,7 +152,7 @@ char				*ft_itoa_base(unsigned long long nb)
 		nb /= 2;
 	}
 	return (str);
-}*/
+}
 
 char		*long_plus(char *str, char *str_plus)//сложение двух строчных чисел
 {
@@ -180,6 +182,7 @@ char		*long_plus(char *str, char *str_plus)//сложение двух стро�
 			j++;
 		}
 	}
+	free(str_plus);
 	return (str);
 }
 
@@ -192,7 +195,12 @@ char		*double_power(int pow)//возведение степени двойки
 
 	i = 1;
 	if (pow == 0)
-		return ("1");
+	{
+		str = (char *)malloc(sizeof(char) * (2));
+		str[0] = '1';
+		str[1] = '\0';
+		return (str);
+	}
 	str = (char *)malloc(sizeof(char) * (pow + 1));
 	str[0] = '1';
 	while (i < pow)
@@ -270,27 +278,40 @@ char		*okruglenie(char *str, int precision)
 	str_plus = NULL;
 	i = check_after_stop(str);
 	fix = i;
+	printf("str = %s\n", str);
 	while (str[i] && precision)
 	{
 		precision--;
 		i++;
 	}
+	printf("str = %s\n", str);
+	printf("i = %d\n", i);
+	printf("precision = %d\n", precision);
 	if (precision)
-		str = ft_strjoin(str, zero_str(precision));
-	if (str[i])
+	{
+		str = ft_strplus(str, zero_str(precision), 1, 1);
+		return (str);
+	}
+	if (precision == 0)
 	{
 		i++;
 		if (str[i] >= '5' && str[i] <= '9')
 		{
-			str_plus = ft_strjoin(zero_str(i - 1), "1");
+			printf("i_for = %d\n", i);
+			str = str_rewrite(str, i);
+			str_plus = ft_strplus(zero_str(i - 1), "1", 1, 0);
 			str_plus = str_revers(long_plus(str_revers(str),
 						str_revers(str_plus)));
 		}
+		else
+			str = str_rewrite(str, i);
 	}
 	if (str_plus)
 		return (str_plus);
 	return (str);
 }
+
+//ft_strplus - стрджоин который фришит пишется ft_strplus(char *s1, char *s2, int i, int j) где i и j говорят фришить строу или нет 
 
 char		*whole_number(char *str_new_whole, char *str_new_small, int exp)
 {
@@ -302,19 +323,21 @@ char		*whole_number(char *str_new_whole, char *str_new_small, int exp)
 
 	i = 0;
 	if(exp > 63)
-		str_new_whole = ft_strjoin(zero_str(exp - 63), str_new_whole);
+		str_new_whole = ft_strplus(zero_str(exp - 63), str_new_whole, 1, 1);
 	symbols_value = ft_ssttrr_len(str_new_whole);
 	str = zero_str(symbols_value);
+	printf("str_before = %s\n", str_new_whole);
 	while (str_new_whole[i])
 	{
 		if (str_new_whole[i] == '1')
 		{
 			printf("pow = %d\n", i);
 			str_new = double_power(i);
-			str = long_plus(ft_strjoin(str_new, zero_str(symbols_value - i)), str);
+			str = long_plus(ft_strplus(str_new, zero_str(symbols_value - i), 1, 1), str);
 		}
 		i++;
 	}
+	printf("str = %s\n", str);
 	i = 0;
 	symbols_value = ft_ssttrr_len(str_new_small);
 	str1 = zero_str(symbols_value--);
@@ -323,7 +346,7 @@ char		*whole_number(char *str_new_whole, char *str_new_small, int exp)
 		if (str_new_small[i] == '1')
 		{
 			str_new = str_small_part(i);
-			str1 = long_plus(ft_strjoin(zero_str(symbols_value - i), str_new), str1);
+			str1 = long_plus(ft_strplus(zero_str(symbols_value - i), str_new, 1, 1), str1);
 		}
 		i++;
 	}
@@ -339,7 +362,7 @@ char		*whole_part(char *str, long long int exp, int precision)
 	long long int		fix;
 	int					value;
 
-	printf("str_before = %s\n", str);
+//	printf("str_before = %s\n", str);
 	i = 0;
 	fix = exp;
 	str_new_whole = zero_str(exp);
@@ -349,7 +372,7 @@ char		*whole_part(char *str, long long int exp, int precision)
 		i++;
 		exp--;
 	}
-	printf("str_new_whole = %s\n", str_new_whole);
+//	printf("str_new_whole = %s\n", str_new_whole);
 	str_new_whole = str_revers(str_new_whole);
 	i = 0;
 	value = 0;
@@ -373,6 +396,7 @@ char		*whole_part(char *str, long long int exp, int precision)
 		exp++;
 		i++;
 	}
+	free(str);
 	return(okruglenie(whole_number(str_new_whole, str_new_small,
 					fix), precision));
 }
@@ -397,16 +421,20 @@ char		*str_dd(va_list *va, t_flags *flags)
 	if (flags->type == L)
 		b = va_arg(*va, long double);
 	else
-		b = (long double)va_arg(*va, double);
+		b = va_arg(*va, double);
 	if (flags->precision == -1)
 		flags->precision = 6;
+	printf("precision = %d\n",flags->precision);
 	bb.a = b;
-	printf("b = %Lf\n", b);
-	printf("mant = %llu\n", bb.b_bit.mant);
+//	printf("b = %Lf\n", b);
+//	printf("mant = %llu\n", bb.b_bit.sign);
+//	printf("mant = %llu\n", bb.b_bit.mant);
+//	printf("double = %s\n", ft_itoa_base1(bb.b_bit.mant));
+//	printf("mant = %llu\n", bb.b_bit.exp);
 	exp = bb.b_bit.exp - 16383;
 	if (bb.b_bit.sign == 1)
-		return (ft_strjoin("-", whole_part(ft_itoa_base(bb.b_bit.mant, 2, 'A'),
-						exp, flags->precision)));
-	return (whole_part(ft_itoa_base(bb.b_bit.mant, 2, 'A'), exp,
+		return (ft_strplus("-", whole_part(ft_itoa_base1(bb.b_bit.mant),
+						exp, flags->precision), 0, 1));
+	return (whole_part(ft_itoa_base1(bb.b_bit.mant), exp,
 				flags->precision));
 }
